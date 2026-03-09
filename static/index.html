@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@600;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #e2e2f0;
+            font-family: 'Syne', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            color: #7c6af7;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 40px;
+            font-weight: 800;
+        }
+
+        h1 span {
+            color: #7c6af7;
+        }
+
+        .subtitle {
+            color: #6b6b8a;
+            font-size: 14px;
+            margin-top: 8px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .messages {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 200px;
+        }
+
+        .message {
+            border-radius: 12px;
+            padding: 20px 24px;
+            line-height: 1.7;
+            font-size: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: #111118;
+            border: 1px solid #1e1e2e;
+            align-self: flex-end;
+            max-width: 80%;
+            color: #e2e2f0;
+        }
+
+        .message.assistant {
+            background: #111118;
+            border: 1px solid rgba(124, 106, 247, 0.2);
+            align-self: flex-start;
+            width: 100%;
+        }
+
+        .searches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .search-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 11px;
+            background: rgba(124, 106, 247, 0.08);
+            border: 1px solid rgba(124, 106, 247, 0.2);
+            color: #7c6af7;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .answer {
+            color: #e2e2f0;
+        }
+
+        .answer h1,
+        .answer h2,
+        .answer h3 {
+            color: #e2e2f0;
+            margin: 16px 0 8px;
+            font-family: 'Syne', sans-serif;
+        }
+
+        .answer h2 {
+            font-size: 18px;
+            color: #7c6af7;
+        }
+
+        .answer h3 {
+            font-size: 15px;
+        }
+
+        .answer p {
+            margin-bottom: 10px;
+        }
+
+        .answer ul,
+        .answer ol {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .answer li {
+            margin-bottom: 4px;
+        }
+
+        .answer strong {
+            color: #ffffff;
+        }
+
+        .answer code {
+            font-family: 'Space Mono', monospace;
+            background: rgba(124, 106, 247, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        input {
+            flex: 1;
+            background: #111118;
+            border: 1px solid #1e1e2e;
+            border-radius: 10px;
+            padding: 14px 18px;
+            color: #e2e2f0;
+            font-family: 'Syne', sans-serif;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: rgba(124, 106, 247, 0.4);
+        }
+
+        input::placeholder {
+            color: #6b6b8a;
+        }
+
+        button {
+            background: #7c6af7;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 24px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b6b8a;
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            padding: 16px 0;
+        }
+
+        .dot-pulse {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot-pulse span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #7c6af7;
+            animation: pulse 1.2s infinite;
+        }
+
+        .dot-pulse span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot-pulse span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            80%,
+            100% {
+                opacity: 0.2;
+                transform: scale(0.8);
+            }
+
+            40% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="tag">// search agent · v0.1</div>
+        <h1>Ask <span>Anything</span></h1>
+        <p class="subtitle">powered by Claude + Tavily</p>
+    </header>
+
+    <div class="chat-container">
+        <div class="messages" id="messages"></div>
+
+        <div class="input-row">
+            <input type="text" id="input" placeholder="Preguntá algo..."
+                onkeydown="if(event.key==='Enter') sendMessage()" />
+            <button id="btn" onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const btn = document.getElementById('btn');
+            const messages = document.getElementById('messages');
+            const text = input.value.trim();
+            if (!text) return;
+
+            messages.innerHTML += `
+                <div class="message user">${text}</div>
+            `;
+
+            const loadingId = 'loading-' + Date.now();
+            messages.innerHTML += `
+                <div class="loading" id="${loadingId}">
+                    <div class="dot-pulse">
+                        <span></span><span></span><span></span>
+                    </div>
+                    Buscando y procesando...
+                </div>
+            `;
+
+            input.value = '';
+            input.disabled = true;
+            btn.disabled = true;
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await res.json();
+
+                document.getElementById(loadingId).remove();
+
+                const searchTags = data.searches.map(s =>
+                    `<span class="search-tag">🔍 ${s}</span>`
+                ).join('');
+
+                messages.innerHTML += `
+                    <div class="message assistant">
+                        ${data.searches.length > 0 ? `<div class="searches">${searchTags}</div>` : ''}
+                        <div class="answer">${marked.parse(data.answer)}</div>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById(loadingId).remove();
+                messages.innerHTML += `
+                    <div class="message assistant">
+                        <div class="answer">Error conectando con el servidor.</div>
+                    </div>
+                `;
+            }
+
+            input.disabled = false;
+            btn.disabled = false;
+            input.focus();
+            messages.scrollTop = messages.scrollHeight;
+        }
+    </script>
+
+</body>
+
+</html>
